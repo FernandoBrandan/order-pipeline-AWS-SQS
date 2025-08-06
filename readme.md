@@ -1,4 +1,4 @@
-# Proyecto Serverless con SQS – `slsA` ➜ `slsB`
+# Proyecto Serverless con SQS - `slsA` -> `slsB`
 
 ## <mark> Version 2: serverless-lift - crea una cola SQS + Lambda asociada automáticamente.
 
@@ -12,26 +12,23 @@ Este proyecto implementa una arquitectura `serverless distribuida`, compuesta po
 
 ## Objetivo funcional 
 
-Crear un pedido desde una API HTTP (`slsA`) ➜ enviarlo a una cola SQS ➜ procesarlo en otra Lambda (`slsB`) ➜ guardarlo en DynamoDB.
+Crear un pedido desde una API HTTP (`slsA`) -> enviarlo a una cola SQS -> procesarlo en otra Lambda (`slsB`) -> guardarlo en DynamoDB.
 
 ## Flujo de eventos
 
 ```plaintext
 Cliente
   │
-  ▼
 [slsA] Lambda: POST /orders (API Gateway + Lambda para recibir pedidos  )
   │
-  ├── Valida input
-  └── Publica mensaje JSON en SQS
-       │
-       ▼
+  |-- Valida input
+  |-- Publica mensaje JSON en SQS
+       |
 [SQS Queue] ← creada por slsB (o stack externo) (desacoplar los servicios)
-       │
-       ▼
+       |
 [slsB] Lambda: Procesa mensaje (Lambda consumidora de la cola + DynamoDB)
-  ├── Loguea
-  └── Guarda en DynamoDB 
+  |-- Loguea
+  |-- Guarda en DynamoDB 
 ```
 
 ## Casos reales 
@@ -47,7 +44,7 @@ Cliente
 | `LocalStack`		               | Simulación de AWS (SQS, Lambda, DynamoDB)    |
 | `serverless-offline`           | Ejecutar Lambdas HTTP localmente             |
 | `serverless-localstack`        | Integrar Serverless Framework con LocalStack |
-| `serverless-offline-sqs`       | Simular triggers SQS → Lambda localmente     |
+| `serverless-offline-sqs`       | Simular triggers SQS -> Lambda localmente    |
 | `serverless-offline-sqs-dlq`   | Simular Dead Letter Queue - retries          |
 
 ## Issue
