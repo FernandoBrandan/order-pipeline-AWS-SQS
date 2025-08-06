@@ -12,7 +12,7 @@ Este proyecto implementa una arquitectura `serverless distribuida`, compuesta po
 
 ## Objetivo funcional 
 
-> Crear un pedido desde una API HTTP (`slsA`) ➜ enviarlo a una cola SQS ➜ procesarlo en otra Lambda (`slsB`) ➜ guardarlo en DynamoDB.
+Crear un pedido desde una API HTTP (`slsA`) ➜ enviarlo a una cola SQS ➜ procesarlo en otra Lambda (`slsB`) ➜ guardarlo en DynamoDB.
 
 ## Flujo de eventos
 
