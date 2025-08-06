@@ -1,0 +1,10 @@
+{
+  "name": "a",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "sls offline start",
+    "test": "jest"
+  },
+  "dependencies": {}
+}

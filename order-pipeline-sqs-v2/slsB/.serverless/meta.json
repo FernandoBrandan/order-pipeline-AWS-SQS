@@ -1,0 +1,517 @@
+{
+  "/home/fernando/Escritorio/order-pipeline-sqs/order-pipeline-sqs-v2/slsB/serverless.yml": {
+    "versionFramework": "4.18.0",
+    "servicePath": "/home/fernando/Escritorio/order-pipeline-sqs/order-pipeline-sqs-v2/slsB/serverless.yml",
+    "serviceConfigFileName": "serverless.yml",
+    "service": {
+      "service": "slsB",
+      "provider": {
+        "name": "aws",
+        "runtime": "nodejs18.x",
+        "region": "us-east-1",
+        "stage": "local",
+        "environment": {
+          "TABLE_NAME": "order-table",
+          "AWS_ACCESS_KEY_ID": "<REDACTED>",
+          "AWS_SECRET_ACCESS_KEY": "<REDACTED>",
+          "AWS_REGION": "us-east-1",
+          "AWS_ENDPOINT_URL": "http://localhost:4566"
+        },
+        "iamRoleStatements": [
+          {
+            "Effect": "Allow",
+            "Action": [
+              "dynamodb:PutItem",
+              "dynamodb:GetItem",
+              "dynamodb:UpdateItem",
+              "dynamodb:Query",
+              "dynamodb:Scan"
+            ],
+            "Resource": "arn:aws:dynamodb:us-east-1:000000000000:table/order-table"
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+              "sqs:SendMessage",
+              "sqs:ChangeMessageVisibility"
+            ],
+            "Resource": [
+              "${Token[TOKEN.28]}"
+            ]
+          }
+        ],
+        "versionFunctions": true
+      },
+      "plugins": [
+        "serverless-localstack",
+        "serverless-offline",
+        "serverless-lift"
+      ],
+      "custom": {
+        "localstack": {
+          "stages": [
+            "local"
+          ],
+          "host": "http://localhost",
+          "edgePort": 4566,
+          "autostart": true,
+          "lambda": {
+            "mountCode": true
+          }
+        },
+        "serverless-offline": {
+          "httpPort": 3003,
+          "lambdaPort": 3004
+        }
+      },
+      "functions": {
+        "processOrder": {
+          "handler": "src/handlers/processOrder.handler",
+          "events": [
+            {
+              "sqs": {
+                "arn": "${Token[TOKEN.28]}",
+                "batchSize": 1,
+                "maximumBatchingWindow": 0,
+                "functionResponseType": "ReportBatchItemFailures"
+              }
+            }
+          ],
+          "name": "slsB-local-processOrder"
+        }
+      },
+      "constructs": {
+        "orderQueue": {
+          "type": "queue",
+          "worker": "processOrder"
+        }
+      },
+      "resources": {
+        "Resources": {
+          "OrderTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "order-table",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "orderId",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "orderId",
+                  "KeyType": "HASH"
+                }
+              ],
+              "BillingMode": "PAY_PER_REQUEST"
+            }
+          }
+        },
+        "Outputs": {
+          "OrderQueueUrl": {
+            "Value": {
+              "Fn::GetAtt": [
+                "orderQueue",
+                "QueueUrl"
+              ]
+            },
+            "Export": {
+              "Name": "order-queue-url"
+            }
+          }
+        }
+      }
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "nodejs18.x",
+      "region": "us-east-1",
+      "stage": "local",
+      "environment": {
+        "TABLE_NAME": "order-table",
+        "AWS_ACCESS_KEY_ID": "<REDACTED>",
+        "AWS_SECRET_ACCESS_KEY": "<REDACTED>",
+        "AWS_REGION": "us-east-1",
+        "AWS_ENDPOINT_URL": "http://localhost:4566"
+      },
+      "iamRoleStatements": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "dynamodb:PutItem",
+            "dynamodb:GetItem",
+            "dynamodb:UpdateItem",
+            "dynamodb:Query",
+            "dynamodb:Scan"
+          ],
+          "Resource": "arn:aws:dynamodb:us-east-1:000000000000:table/order-table"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "sqs:SendMessage",
+            "sqs:ChangeMessageVisibility"
+          ],
+          "Resource": [
+            "${Token[TOKEN.28]}"
+          ]
+        }
+      ],
+      "versionFunctions": true
+    },
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": false,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "serviceRawFile": "service: slsB\n\nprovider:\n  name: aws\n  runtime: nodejs18.x\n  region: us-east-1\n  stage: local\n  environment:\n    TABLE_NAME: order-table \n    AWS_ACCESS_KEY_ID: test\n    AWS_SECRET_ACCESS_KEY: test\n    AWS_REGION: us-east-1\n    AWS_ENDPOINT_URL: http://localhost:4566\n  iamRoleStatements:\n    - Effect: Allow\n      Action:\n        - dynamodb:PutItem\n        - dynamodb:GetItem\n        - dynamodb:UpdateItem\n        - dynamodb:Query\n        - dynamodb:Scan\n      Resource:\n        - arn:aws:dynamodb:us-east-1:000000000000:table/order-table\n \nplugins: \n  - serverless-localstack\n  - serverless-offline \n  - serverless-lift \n\ncustom:\n  localstack:\n    stages:\n      - local\n    host: http://localhost\n    edgePort: 4566\n    autostart: true \n    lambda:\n      mountCode: true\n\n  serverless-offline:\n    httpPort: 3003\n    lambdaPort: 3004  \n\nfunctions:\n  processOrder:\n    handler: src/handlers/processOrder.handler\n\nconstructs:\n  orderQueue:\n    type: queue\n    worker: processOrder\n          \nresources:\n  Resources:\n    \n    OrderTable:\n      Type: AWS::DynamoDB::Table\n      Properties:\n        TableName: order-table\n        AttributeDefinitions:\n          - AttributeName: orderId\n            AttributeType: S\n        KeySchema:\n          - AttributeName: orderId\n            KeyType: HASH\n        BillingMode: PAY_PER_REQUEST \n\n  Outputs:\n    OrderQueueUrl:\n      Value:\n        Fn::GetAtt: [orderQueue, QueueUrl]   # ← o el ID real del recurso si usás Lift\n      Export:\n        Name: order-queue-url",
+    "command": [
+      "deploy"
+    ],
+    "options": {
+      "stage": "local"
+    },
+    "orgId": "c28ce56e-12bb-488a-a485-6677818f5d98",
+    "orgName": "ferbrandan",
+    "userId": "F68YhKwQtMYw74b1yG",
+    "userName": "ferbrandan",
+    "serviceProviderAwsAccountId": "000000000000",
+    "serviceProviderAwsCfStackName": "slsB-local",
+    "serviceProviderAwsCfStackId": "arn:aws:cloudformation:us-east-1:000000000000:stack/slsB-local/7d53dd57",
+    "serviceProviderAwsCfStackCreated": "2025-08-06T22:13:25.318Z",
+    "serviceProviderAwsCfStackUpdated": "2025-08-06T22:13:25.318Z",
+    "serviceProviderAwsCfStackStatus": "CREATE_COMPLETE",
+    "serviceProviderAwsCfStackOutputs": [
+      {
+        "OutputKey": "ServerlessDeploymentBucketName",
+        "OutputValue": "serverless-framework-deployments-us-east-1-7cc720e8-a794",
+        "ExportName": "sls-slsB-local-ServerlessDeploymentBucketName"
+      },
+      {
+        "OutputKey": "ProcessOrderLambdaFunctionQualifiedArn",
+        "OutputValue": "arn:aws:lambda:us-east-1:000000000000:function:slsB-local-processOrder:1",
+        "Description": "Current Lambda function version",
+        "ExportName": "sls-slsB-local-ProcessOrderLambdaFunctionQualifiedArn"
+      },
+      {
+        "OutputKey": "OrderQueueUrl",
+        "ExportName": "order-queue-url"
+      },
+      {
+        "OutputKey": "orderQueueQueueArn2D2C5816",
+        "OutputValue": "arn:aws:sqs:us-east-1:000000000000:slsB-local-orderQueue",
+        "Description": "ARN of the \"orderQueue\" SQS queue."
+      },
+      {
+        "OutputKey": "orderQueueQueueUrl9A81650D",
+        "OutputValue": "http://sqs.us-east-1.localhost:4566/000000000000/slsB-local-orderQueue",
+        "Description": "URL of the \"orderQueue\" SQS queue."
+      },
+      {
+        "OutputKey": "orderQueueDlqUrl30CD5E82",
+        "OutputValue": "http://sqs.us-east-1.localhost:4566/000000000000/slsB-local-orderQueue-dlq",
+        "Description": "URL of the \"orderQueue\" SQS dead letter queue."
+      }
+    ],
+    "compiledCloudFormationTemplate": {
+      "AWSTemplateFormatVersion": "2010-09-09",
+      "Description": "The AWS CloudFormation template for this Serverless application",
+      "Resources": {
+        "ProcessOrderLogGroup": {
+          "Type": "AWS::Logs::LogGroup",
+          "Properties": {
+            "LogGroupName": "/aws/lambda/slsB-local-processOrder"
+          }
+        },
+        "IamRoleLambdaExecution": {
+          "Type": "AWS::IAM::Role",
+          "Properties": {
+            "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": [
+                      "lambda.amazonaws.com"
+                    ]
+                  },
+                  "Action": [
+                    "sts:AssumeRole"
+                  ]
+                }
+              ]
+            },
+            "Policies": [
+              {
+                "PolicyName": {
+                  "Fn::Join": [
+                    "-",
+                    [
+                      "slsB",
+                      "local",
+                      "lambda"
+                    ]
+                  ]
+                },
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "logs:CreateLogStream",
+                        "logs:CreateLogGroup",
+                        "logs:TagResource"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/slsB-local*:*"
+                        }
+                      ]
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/slsB-local*:*:*"
+                        }
+                      ]
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "dynamodb:PutItem",
+                        "dynamodb:GetItem",
+                        "dynamodb:UpdateItem",
+                        "dynamodb:Query",
+                        "dynamodb:Scan"
+                      ],
+                      "Resource": "arn:aws:dynamodb:us-east-1:000000000000:table/order-table"
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "sqs:SendMessage",
+                        "sqs:ChangeMessageVisibility"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::GetAtt": [
+                            "orderQueueEB6EB4D1",
+                            "Arn"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "sqs:ReceiveMessage",
+                        "sqs:DeleteMessage",
+                        "sqs:GetQueueAttributes"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::GetAtt": [
+                            "orderQueueEB6EB4D1",
+                            "Arn"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ],
+            "Path": "/",
+            "RoleName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "slsB",
+                  "local",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "lambdaRole"
+                ]
+              ]
+            }
+          }
+        },
+        "ProcessOrderLambdaFunction": {
+          "Type": "AWS::Lambda::Function",
+          "Properties": {
+            "Code": {
+              "S3Bucket": "hot-reload",
+              "S3Key": "/home/fernando/Escritorio/order-pipeline-sqs/order-pipeline-sqs-v2/slsB"
+            },
+            "Handler": "src/handlers/processOrder.handler",
+            "Runtime": "nodejs18.x",
+            "FunctionName": "slsB-local-processOrder",
+            "MemorySize": 1024,
+            "Timeout": 6,
+            "Environment": {
+              "Variables": {
+                "TABLE_NAME": "order-table",
+                "AWS_ACCESS_KEY_ID": "<REDACTED>",
+                "AWS_SECRET_ACCESS_KEY": "<REDACTED>",
+                "AWS_REGION": "us-east-1",
+                "AWS_ENDPOINT_URL": "http://localhost:4566"
+              }
+            },
+            "Role": {
+              "Fn::GetAtt": [
+                "IamRoleLambdaExecution",
+                "Arn"
+              ]
+            }
+          },
+          "DependsOn": [
+            "ProcessOrderLogGroup"
+          ]
+        },
+        "ProcessOrderLambdaVersion88V65gs02zyZSH9qQfAUEaxzleJZbg8MLGgX5qdqQ0": {
+          "Type": "AWS::Lambda::Version",
+          "DeletionPolicy": "Retain",
+          "Properties": {
+            "FunctionName": {
+              "Ref": "ProcessOrderLambdaFunction"
+            },
+            "CodeSha256": "ULSruH0b009w49xQn/aJHsTNaSkNA9iBTL5kBhZ7rSc="
+          }
+        },
+        "ProcessOrderEventSourceMappingSQSOrderQueueEB6EB4D1": {
+          "Type": "AWS::Lambda::EventSourceMapping",
+          "DependsOn": [
+            "IamRoleLambdaExecution"
+          ],
+          "Properties": {
+            "BatchSize": 1,
+            "MaximumBatchingWindowInSeconds": 0,
+            "EventSourceArn": {
+              "Fn::GetAtt": [
+                "orderQueueEB6EB4D1",
+                "Arn"
+              ]
+            },
+            "FunctionName": {
+              "Fn::GetAtt": [
+                "ProcessOrderLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Enabled": true,
+            "FunctionResponseTypes": [
+              "ReportBatchItemFailures"
+            ]
+          }
+        },
+        "OrderTable": {
+          "Type": "AWS::DynamoDB::Table",
+          "Properties": {
+            "TableName": "order-table",
+            "AttributeDefinitions": [
+              {
+                "AttributeName": "orderId",
+                "AttributeType": "S"
+              }
+            ],
+            "KeySchema": [
+              {
+                "AttributeName": "orderId",
+                "KeyType": "HASH"
+              }
+            ],
+            "BillingMode": "PAY_PER_REQUEST"
+          }
+        },
+        "orderQueueDlq069498A5": {
+          "Type": "AWS::SQS::Queue",
+          "Properties": {
+            "MessageRetentionPeriod": 1209600,
+            "QueueName": "slsB-local-orderQueue-dlq"
+          },
+          "UpdateReplacePolicy": "Delete",
+          "DeletionPolicy": "Delete"
+        },
+        "orderQueueEB6EB4D1": {
+          "Type": "AWS::SQS::Queue",
+          "Properties": {
+            "QueueName": "slsB-local-orderQueue",
+            "RedrivePolicy": {
+              "deadLetterTargetArn": {
+                "Fn::GetAtt": [
+                  "orderQueueDlq069498A5",
+                  "Arn"
+                ]
+              },
+              "maxReceiveCount": 3
+            },
+            "VisibilityTimeout": 36
+          },
+          "UpdateReplacePolicy": "Delete",
+          "DeletionPolicy": "Delete"
+        }
+      },
+      "Outputs": {
+        "ServerlessDeploymentBucketName": {
+          "Value": "serverless-framework-deployments-us-east-1-7cc720e8-a794",
+          "Export": {
+            "Name": "sls-slsB-local-ServerlessDeploymentBucketName"
+          }
+        },
+        "ProcessOrderLambdaFunctionQualifiedArn": {
+          "Description": "Current Lambda function version",
+          "Value": {
+            "Ref": "ProcessOrderLambdaVersion88V65gs02zyZSH9qQfAUEaxzleJZbg8MLGgX5qdqQ0"
+          },
+          "Export": {
+            "Name": "sls-slsB-local-ProcessOrderLambdaFunctionQualifiedArn"
+          }
+        },
+        "OrderQueueUrl": {
+          "Value": {
+            "Fn::GetAtt": [
+              "orderQueue",
+              "QueueUrl"
+            ]
+          },
+          "Export": {
+            "Name": "order-queue-url"
+          }
+        },
+        "orderQueueQueueArn2D2C5816": {
+          "Description": "ARN of the \"orderQueue\" SQS queue.",
+          "Value": {
+            "Fn::GetAtt": [
+              "orderQueueEB6EB4D1",
+              "Arn"
+            ]
+          }
+        },
+        "orderQueueQueueUrl9A81650D": {
+          "Description": "URL of the \"orderQueue\" SQS queue.",
+          "Value": {
+            "Ref": "orderQueueEB6EB4D1"
+          }
+        },
+        "orderQueueDlqUrl30CD5E82": {
+          "Description": "URL of the \"orderQueue\" SQS dead letter queue.",
+          "Value": {
+            "Ref": "orderQueueDlq069498A5"
+          }
+        }
+      }
+    }
+  }
+}

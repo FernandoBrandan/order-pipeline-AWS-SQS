@@ -1,0 +1,133 @@
+{
+  "/home/fernando/Escritorio/order-pipeline-sqs/slsB/serverless.yml": {
+    "versionFramework": "4.17.2",
+    "servicePath": "/home/fernando/Escritorio/order-pipeline-sqs/slsB/serverless.yml",
+    "serviceConfigFileName": "serverless.yml",
+    "service": {
+      "service": "slsB",
+      "provider": {
+        "name": "aws",
+        "runtime": "nodejs18.x",
+        "region": "us-east-1",
+        "stage": "dev",
+        "environment": {
+          "TABLE_NAME": "order-table",
+          "QUEUE_URL": "http://localhost:4566/000000000000/order-queue"
+        },
+        "versionFunctions": true
+      },
+      "plugins": [
+        "serverless-localstack",
+        "serverless-offline",
+        "serverless-offline-sqs"
+      ],
+      "custom": {
+        "localstack": {
+          "stages": [
+            "dev"
+          ],
+          "host": "http://localhost",
+          "edgePort": 4566,
+          "autostart": true,
+          "lambda": {
+            "mountCode": true
+          }
+        },
+        "serverless-offline": {
+          "httpPort": 3003,
+          "lambdaPort": 3004
+        },
+        "serverless-offline-sqs": {
+          "autoCreate": true,
+          "apiVersion": "2012-11-05",
+          "endpoint": "http://0.0.0.0:9324",
+          "region": "us-east-1"
+        }
+      },
+      "functions": {
+        "processOrder": {
+          "handler": "src/handlers/processOrder.handler",
+          "events": [
+            {
+              "sqs": {
+                "arn": "arn:aws:sqs:us-east-1:000000000000:order-queue",
+                "batchSize": 5
+              }
+            }
+          ],
+          "name": "slsB-dev-processOrder"
+        }
+      },
+      "resources": {
+        "Resources": {
+          "OrderQueue": {
+            "Type": "AWS::SQS::Queue",
+            "Properties": {
+              "QueueName": "order-queue"
+            }
+          },
+          "OrderTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "order-table",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "orderId",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "orderId",
+                  "KeyType": "HASH"
+                }
+              ],
+              "BillingMode": "PAY_PER_REQUEST"
+            }
+          }
+        }
+      }
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "nodejs18.x",
+      "region": "us-east-1",
+      "stage": "dev",
+      "environment": {
+        "TABLE_NAME": "order-table",
+        "QUEUE_URL": "http://localhost:4566/000000000000/order-queue"
+      },
+      "versionFunctions": true
+    },
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": false,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "error": {
+      "message": "Inaccessible host: `0.0.0.0' at port `9324'. This service may not be available in the `us-east-1' region.",
+      "stack": "UnknownEndpoint: Inaccessible host: `0.0.0.0' at port `9324'. This service may not be available in the `us-east-1' region.\n    at Request.ENOTFOUND_ERROR (/home/fernando/Escritorio/order-pipeline-sqs/slsB/node_modules/aws-sdk/lib/event_listeners.js:612:46)\n    at Request.callListeners (/home/fernando/Escritorio/order-pipeline-sqs/slsB/node_modules/aws-sdk/lib/sequential_executor.js:106:20)\n    at Request.emit (/home/fernando/Escritorio/order-pipeline-sqs/slsB/node_modules/aws-sdk/lib/sequential_executor.js:78:10)\n    at Request.emit (/home/fernando/Escritorio/order-pipeline-sqs/slsB/node_modules/aws-sdk/lib/request.js:686:14)\n    at error (/home/fernando/Escritorio/order-pipeline-sqs/slsB/node_modules/aws-sdk/lib/event_listeners.js:443:22)\n    at ClientRequest.<anonymous> (/home/fernando/Escritorio/order-pipeline-sqs/slsB/node_modules/aws-sdk/lib/http/node.js:100:9)\n    at ClientRequest.emit (node:events:507:28)\n    at ClientRequest.emit (node:domain:489:12)\n    at emitErrorEvent (node:_http_client:104:11)\n    at Socket.socketErrorListener (node:_http_client:518:5)",
+      "code": "UnknownEndpoint"
+    },
+    "serviceRawFile": "service: slsB\n\nprovider:\n  name: aws\n  runtime: nodejs18.x\n  region: us-east-1\n  stage: dev\n  environment:\n    TABLE_NAME: order-table \n    QUEUE_URL: http://localhost:4566/000000000000/order-queue\n\nplugins:\n  - serverless-localstack\n  - serverless-offline\n  - serverless-offline-sqs\n\ncustom:\n  localstack:\n    stages:\n      - dev\n    host: http://localhost\n    edgePort: 4566\n    autostart: true \n    lambda:\n      mountCode: true\n\n  serverless-offline:\n    httpPort: 3003\n    lambdaPort: 3004\n\n  serverless-offline-sqs:\n    autoCreate: true\n    apiVersion: '2012-11-05'\n    endpoint: http://0.0.0.0:9324    # ← Puerto diferente a LocalStack\n    region: us-east-1 \n\nfunctions:\n  processOrder:\n    handler: src/handlers/processOrder.handler\n    events:\n      - sqs: \n          arn: arn:aws:sqs:us-east-1:000000000000:order-queue\n          batchSize: 5\n\nresources:\n  Resources:\n       \n    OrderQueue:\n      Type: AWS::SQS::Queue\n      Properties:\n        QueueName: order-queue\n\n    OrderTable:\n      Type: AWS::DynamoDB::Table\n      Properties:\n        TableName: order-table\n        AttributeDefinitions:\n          - AttributeName: orderId\n            AttributeType: S\n        KeySchema:\n          - AttributeName: orderId\n            KeyType: HASH\n        BillingMode: PAY_PER_REQUEST",
+    "command": [
+      "offline",
+      "start"
+    ],
+    "options": {},
+    "orgId": "c28ce56e-12bb-488a-a485-6677818f5d98",
+    "orgName": "ferbrandan",
+    "userId": "F68YhKwQtMYw74b1yG",
+    "userName": "ferbrandan",
+    "serviceProviderAwsAccountId": "000000000000",
+    "serviceProviderAwsCfStackId": null,
+    "serviceProviderAwsCfStackCreated": null,
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": null,
+    "serviceProviderAwsCfStackOutputs": null
+  }
+}

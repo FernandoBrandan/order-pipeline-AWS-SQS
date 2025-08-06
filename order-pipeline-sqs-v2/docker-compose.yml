@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  localstack:
+    image: localstack/localstack:3
+    container_name: sls_sqs_localstack
+    ports:
+      - "4566:4566" 
+    environment:
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - SERVICES=apigateway,sqs,dynamodb,lambda,iam,cloudformation,logs,ssm  # ← Específico
+      - DOCKER_HOST=unix:///var/run/docker.sock  # ← Explícito
+      - LOCALSTACK_HOST=localhost  # ← Para URLs consistentes
+    volumes:
+      - ./localstack:/etc/localstack/init/ready.d
+      - localstack_data:/var/lib/localstack/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:  # ← NUEVO: Para verificar que esté listo
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      
+volumes:
+  localstack_data:

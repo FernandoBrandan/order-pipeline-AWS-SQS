@@ -1,0 +1,1049 @@
+{
+  "/home/fernando/Escritorio/order-pipeline-sqs/order-pipeline-sqs-v2/slsA/serverless.yml": {
+    "versionFramework": "4.18.0",
+    "servicePath": "/home/fernando/Escritorio/order-pipeline-sqs/order-pipeline-sqs-v2/slsA/serverless.yml",
+    "serviceConfigFileName": "serverless.yml",
+    "service": {
+      "service": "slsA",
+      "provider": {
+        "name": "aws",
+        "runtime": "nodejs18.x",
+        "region": "us-east-1",
+        "stage": "local",
+        "environment": {
+          "QUEUE_URL": "http://sqs.us-east-1.172.17.0.1:4566/000000000000/slsB-local-orderQueue",
+          "AWS_ENDPOINT": "http://172.17.0.1:4566",
+          "AWS_REGION": "us-east-1"
+        },
+        "versionFunctions": true,
+        "compiledCloudFormationTemplate": {
+          "AWSTemplateFormatVersion": "2010-09-09",
+          "Description": "The AWS CloudFormation template for this Serverless application",
+          "Resources": {
+            "CreateOrderLogGroup": {
+              "Type": "AWS::Logs::LogGroup",
+              "Properties": {
+                "LogGroupName": "/aws/lambda/slsA-local-createOrder"
+              }
+            },
+            "IamRoleLambdaExecution": {
+              "Type": "AWS::IAM::Role",
+              "Properties": {
+                "AssumeRolePolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Principal": {
+                        "Service": [
+                          "lambda.amazonaws.com"
+                        ]
+                      },
+                      "Action": [
+                        "sts:AssumeRole"
+                      ]
+                    }
+                  ]
+                },
+                "Policies": [
+                  {
+                    "PolicyName": {
+                      "Fn::Join": [
+                        "-",
+                        [
+                          "slsA",
+                          "local",
+                          "lambda"
+                        ]
+                      ]
+                    },
+                    "PolicyDocument": {
+                      "Version": "2012-10-17",
+                      "Statement": [
+                        {
+                          "Effect": "Allow",
+                          "Action": [
+                            "logs:CreateLogStream",
+                            "logs:CreateLogGroup",
+                            "logs:TagResource"
+                          ],
+                          "Resource": [
+                            {
+                              "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/slsA-local*:*"
+                            }
+                          ]
+                        },
+                        {
+                          "Effect": "Allow",
+                          "Action": [
+                            "logs:PutLogEvents"
+                          ],
+                          "Resource": [
+                            {
+                              "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/slsA-local*:*:*"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "Path": "/",
+                "RoleName": {
+                  "Fn::Join": [
+                    "-",
+                    [
+                      "slsA",
+                      "local",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      "lambdaRole"
+                    ]
+                  ]
+                }
+              }
+            },
+            "CreateOrderLambdaFunction": {
+              "Type": "AWS::Lambda::Function",
+              "Properties": {
+                "Code": {
+                  "S3Bucket": "hot-reload",
+                  "S3Key": "/home/fernando/Escritorio/order-pipeline-sqs/order-pipeline-sqs-v2/slsA"
+                },
+                "Handler": ".serverless/build/src/handlers/createOrder.handler",
+                "Runtime": "nodejs18.x",
+                "FunctionName": "slsA-local-createOrder",
+                "MemorySize": 1024,
+                "Timeout": 6,
+                "Environment": {
+                  "Variables": {
+                    "QUEUE_URL": "http://sqs.us-east-1.172.17.0.1:4566/000000000000/slsB-local-orderQueue",
+                    "AWS_ENDPOINT": "http://172.17.0.1:4566",
+                    "AWS_REGION": "us-east-1",
+                    "NODE_OPTIONS": "--enable-source-maps"
+                  }
+                },
+                "Role": {
+                  "Fn::GetAtt": [
+                    "IamRoleLambdaExecution",
+                    "Arn"
+                  ]
+                }
+              },
+              "DependsOn": [
+                "CreateOrderLogGroup"
+              ]
+            },
+            "CreateOrderLambdaVersionTM26cGq9vWf6IuolhWAO8aBSwHYH8UGIN89kTQbTlo": {
+              "Type": "AWS::Lambda::Version",
+              "DeletionPolicy": "Retain",
+              "Properties": {
+                "FunctionName": {
+                  "Ref": "CreateOrderLambdaFunction"
+                },
+                "CodeSha256": "ULSruH0b009w49xQn/aJHsTNaSkNA9iBTL5kBhZ7rSc="
+              }
+            },
+            "ApiGatewayRestApi": {
+              "Type": "AWS::ApiGateway::RestApi",
+              "Properties": {
+                "Name": "local-slsA",
+                "EndpointConfiguration": {
+                  "Types": [
+                    "EDGE"
+                  ]
+                },
+                "Policy": ""
+              }
+            },
+            "ApiGatewayResourceOrders": {
+              "Type": "AWS::ApiGateway::Resource",
+              "Properties": {
+                "ParentId": {
+                  "Fn::GetAtt": [
+                    "ApiGatewayRestApi",
+                    "RootResourceId"
+                  ]
+                },
+                "PathPart": "orders",
+                "RestApiId": {
+                  "Ref": "ApiGatewayRestApi"
+                }
+              }
+            },
+            "ApiGatewayMethodOrdersPost": {
+              "Type": "AWS::ApiGateway::Method",
+              "Properties": {
+                "HttpMethod": "POST",
+                "RequestParameters": {},
+                "ResourceId": {
+                  "Ref": "ApiGatewayResourceOrders"
+                },
+                "RestApiId": {
+                  "Ref": "ApiGatewayRestApi"
+                },
+                "ApiKeyRequired": "<REDACTED>",
+                "AuthorizationType": "NONE",
+                "Integration": {
+                  "IntegrationHttpMethod": "POST",
+                  "Type": "AWS_PROXY",
+                  "Uri": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:",
+                        {
+                          "Ref": "AWS::Partition"
+                        },
+                        ":apigateway:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":lambda:path/2015-03-31/functions/",
+                        {
+                          "Fn::GetAtt": [
+                            "CreateOrderLambdaFunction",
+                            "Arn"
+                          ]
+                        },
+                        "/invocations"
+                      ]
+                    ]
+                  }
+                },
+                "MethodResponses": []
+              },
+              "DependsOn": [
+                "CreateOrderLambdaPermissionApiGateway"
+              ]
+            },
+            "ApiGatewayDeployment1754518436866": {
+              "Type": "AWS::ApiGateway::Deployment",
+              "Properties": {
+                "RestApiId": {
+                  "Ref": "ApiGatewayRestApi"
+                },
+                "StageName": "local"
+              },
+              "DependsOn": [
+                "ApiGatewayMethodOrdersPost"
+              ]
+            },
+            "CreateOrderLambdaPermissionApiGateway": {
+              "Type": "AWS::Lambda::Permission",
+              "Properties": {
+                "FunctionName": {
+                  "Fn::GetAtt": [
+                    "CreateOrderLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "apigateway.amazonaws.com",
+                "SourceArn": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":execute-api:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":",
+                      {
+                        "Ref": "AWS::AccountId"
+                      },
+                      ":",
+                      {
+                        "Ref": "ApiGatewayRestApi"
+                      },
+                      "/*/*"
+                    ]
+                  ]
+                }
+              }
+            },
+            "OrderQueue": {
+              "Type": "AWS::SQS::Queue",
+              "Properties": {
+                "QueueName": "order-queue"
+              }
+            }
+          },
+          "Outputs": {
+            "ServerlessDeploymentBucketName": {
+              "Value": "serverless-framework-deployments-us-east-1-7cc720e8-a794",
+              "Export": {
+                "Name": "sls-slsA-local-ServerlessDeploymentBucketName"
+              }
+            },
+            "CreateOrderLambdaFunctionQualifiedArn": {
+              "Description": "Current Lambda function version",
+              "Value": {
+                "Ref": "CreateOrderLambdaVersionTM26cGq9vWf6IuolhWAO8aBSwHYH8UGIN89kTQbTlo"
+              },
+              "Export": {
+                "Name": "sls-slsA-local-CreateOrderLambdaFunctionQualifiedArn"
+              }
+            },
+            "ServiceEndpoint": {
+              "Description": "URL of the service endpoint",
+              "Value": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "https://",
+                    {
+                      "Ref": "ApiGatewayRestApi"
+                    },
+                    ".execute-api.",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ".",
+                    {
+                      "Ref": "AWS::URLSuffix"
+                    },
+                    "/local"
+                  ]
+                ]
+              },
+              "Export": {
+                "Name": "sls-slsA-local-ServiceEndpoint"
+              }
+            }
+          }
+        },
+        "vpc": {},
+        "shouldNotDeploy": false
+      },
+      "plugins": [
+        "serverless-localstack",
+        "serverless-offline"
+      ],
+      "custom": {
+        "localstack": {
+          "stages": [
+            "local"
+          ],
+          "host": "http://localhost",
+          "edgePort": 4566,
+          "autostart": true,
+          "lambda": {
+            "mountCode": true
+          }
+        },
+        "serverless-offline": {
+          "httpPort": 3001,
+          "lambdaPort": 3002
+        },
+        "queueName": "order-queue"
+      },
+      "functions": {
+        "createOrder": {
+          "handler": "src/handlers/createOrder.handler",
+          "events": [
+            {
+              "http": {
+                "path": "orders",
+                "method": "post",
+                "integration": "AWS_PROXY"
+              }
+            }
+          ],
+          "name": "slsA-local-createOrder",
+          "environment": {
+            "NODE_OPTIONS": "--enable-source-maps"
+          },
+          "package": {
+            "artifact": "/home/fernando/Escritorio/order-pipeline-sqs/order-pipeline-sqs-v2/slsA/node_modules/serverless-localstack/src/index.js"
+          },
+          "memory": 1024,
+          "timeout": 6,
+          "runtime": "nodejs18.x",
+          "vpc": {},
+          "versionLogicalId": "CreateOrderLambdaVersionTM26cGq9vWf6IuolhWAO8aBSwHYH8UGIN89kTQbTlo",
+          "artifactSize": 35857
+        }
+      },
+      "resources": {
+        "Resources": {
+          "OrderQueue": {
+            "Type": "AWS::SQS::Queue",
+            "Properties": {
+              "QueueName": "order-queue"
+            }
+          }
+        },
+        "Outputs": {}
+      }
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "nodejs18.x",
+      "region": "us-east-1",
+      "stage": "local",
+      "environment": {
+        "QUEUE_URL": "http://sqs.us-east-1.172.17.0.1:4566/000000000000/slsB-local-orderQueue",
+        "AWS_ENDPOINT": "http://172.17.0.1:4566",
+        "AWS_REGION": "us-east-1"
+      },
+      "versionFunctions": true,
+      "compiledCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "CreateOrderLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/slsA-local-createOrder"
+            }
+          },
+          "IamRoleLambdaExecution": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com"
+                      ]
+                    },
+                    "Action": [
+                      "sts:AssumeRole"
+                    ]
+                  }
+                ]
+              },
+              "Policies": [
+                {
+                  "PolicyName": {
+                    "Fn::Join": [
+                      "-",
+                      [
+                        "slsA",
+                        "local",
+                        "lambda"
+                      ]
+                    ]
+                  },
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogStream",
+                          "logs:CreateLogGroup",
+                          "logs:TagResource"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/slsA-local*:*"
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:PutLogEvents"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/slsA-local*:*:*"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Path": "/",
+              "RoleName": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    "slsA",
+                    "local",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    "lambdaRole"
+                  ]
+                ]
+              }
+            }
+          },
+          "CreateOrderLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": "hot-reload",
+                "S3Key": "/home/fernando/Escritorio/order-pipeline-sqs/order-pipeline-sqs-v2/slsA"
+              },
+              "Handler": ".serverless/build/src/handlers/createOrder.handler",
+              "Runtime": "nodejs18.x",
+              "FunctionName": "slsA-local-createOrder",
+              "MemorySize": 1024,
+              "Timeout": 6,
+              "Environment": {
+                "Variables": {
+                  "QUEUE_URL": "http://sqs.us-east-1.172.17.0.1:4566/000000000000/slsB-local-orderQueue",
+                  "AWS_ENDPOINT": "http://172.17.0.1:4566",
+                  "AWS_REGION": "us-east-1",
+                  "NODE_OPTIONS": "--enable-source-maps"
+                }
+              },
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "CreateOrderLogGroup"
+            ]
+          },
+          "CreateOrderLambdaVersionTM26cGq9vWf6IuolhWAO8aBSwHYH8UGIN89kTQbTlo": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "CreateOrderLambdaFunction"
+              },
+              "CodeSha256": "ULSruH0b009w49xQn/aJHsTNaSkNA9iBTL5kBhZ7rSc="
+            }
+          },
+          "ApiGatewayRestApi": {
+            "Type": "AWS::ApiGateway::RestApi",
+            "Properties": {
+              "Name": "local-slsA",
+              "EndpointConfiguration": {
+                "Types": [
+                  "EDGE"
+                ]
+              },
+              "Policy": ""
+            }
+          },
+          "ApiGatewayResourceOrders": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Fn::GetAtt": [
+                  "ApiGatewayRestApi",
+                  "RootResourceId"
+                ]
+              },
+              "PathPart": "orders",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodOrdersPost": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "POST",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceOrders"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": "<REDACTED>",
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "CreateOrderLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "CreateOrderLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayDeployment1754518436866": {
+            "Type": "AWS::ApiGateway::Deployment",
+            "Properties": {
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "StageName": "local"
+            },
+            "DependsOn": [
+              "ApiGatewayMethodOrdersPost"
+            ]
+          },
+          "CreateOrderLambdaPermissionApiGateway": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "CreateOrderLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "apigateway.amazonaws.com",
+              "SourceArn": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":execute-api:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":",
+                    {
+                      "Ref": "ApiGatewayRestApi"
+                    },
+                    "/*/*"
+                  ]
+                ]
+              }
+            }
+          },
+          "OrderQueue": {
+            "Type": "AWS::SQS::Queue",
+            "Properties": {
+              "QueueName": "order-queue"
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": "serverless-framework-deployments-us-east-1-7cc720e8-a794",
+            "Export": {
+              "Name": "sls-slsA-local-ServerlessDeploymentBucketName"
+            }
+          },
+          "CreateOrderLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "CreateOrderLambdaVersionTM26cGq9vWf6IuolhWAO8aBSwHYH8UGIN89kTQbTlo"
+            },
+            "Export": {
+              "Name": "sls-slsA-local-CreateOrderLambdaFunctionQualifiedArn"
+            }
+          },
+          "ServiceEndpoint": {
+            "Description": "URL of the service endpoint",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Ref": "ApiGatewayRestApi"
+                  },
+                  ".execute-api.",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ".",
+                  {
+                    "Ref": "AWS::URLSuffix"
+                  },
+                  "/local"
+                ]
+              ]
+            },
+            "Export": {
+              "Name": "sls-slsA-local-ServiceEndpoint"
+            }
+          }
+        }
+      },
+      "vpc": {},
+      "shouldNotDeploy": false
+    },
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": false,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "serviceRawFile": "service: slsA\n\nprovider:\n  name: aws\n  runtime: nodejs18.x\n  region: us-east-1\n  stage: local\n  environment:\n    QUEUE_URL: http://sqs.us-east-1.172.17.0.1:4566/000000000000/slsB-local-orderQueue\n    AWS_ENDPOINT: http://172.17.0.1:4566\n    AWS_REGION: us-east-1\n\nplugins:\n  - serverless-localstack\n  - serverless-offline\n\ncustom:\n  localstack:\n    stages:\n      - local\n    host: http://localhost\n    edgePort: 4566\n    autostart: true\n    lambda:\n      mountCode: true\n\n  serverless-offline:\n    httpPort: 3001\n    lambdaPort: 3002\n  \n  queueName: order-queue\n\nfunctions:\n  createOrder:\n    handler: src/handlers/createOrder.handler \n    events:\n      - http:\n          path: orders\n          method: post\n \nresources:\n  Resources:\n    OrderQueue:\n      Type: AWS::SQS::Queue\n      Properties:\n        QueueName: ${self:custom.queueName}",
+    "command": [
+      "deploy"
+    ],
+    "options": {
+      "stage": "local"
+    },
+    "orgId": "c28ce56e-12bb-488a-a485-6677818f5d98",
+    "orgName": "ferbrandan",
+    "userId": "F68YhKwQtMYw74b1yG",
+    "userName": "ferbrandan",
+    "serviceProviderAwsAccountId": "000000000000",
+    "serviceProviderAwsCfStackName": "slsA-local",
+    "serviceProviderAwsCfStackId": "arn:aws:cloudformation:us-east-1:000000000000:stack/slsA-local/9bed4a54",
+    "serviceProviderAwsCfStackCreated": "2025-08-06T22:14:02.966Z",
+    "serviceProviderAwsCfStackUpdated": "2025-08-06T22:14:02.966Z",
+    "serviceProviderAwsCfStackStatus": "CREATE_COMPLETE",
+    "serviceProviderAwsCfStackOutputs": [
+      {
+        "OutputKey": "ServerlessDeploymentBucketName",
+        "OutputValue": "serverless-framework-deployments-us-east-1-7cc720e8-a794",
+        "ExportName": "sls-slsA-local-ServerlessDeploymentBucketName"
+      },
+      {
+        "OutputKey": "CreateOrderLambdaFunctionQualifiedArn",
+        "OutputValue": "arn:aws:lambda:us-east-1:000000000000:function:slsA-local-createOrder:1",
+        "Description": "Current Lambda function version",
+        "ExportName": "sls-slsA-local-CreateOrderLambdaFunctionQualifiedArn"
+      },
+      {
+        "OutputKey": "ServiceEndpoint",
+        "OutputValue": "https://zbwoh2hj2k.execute-api.localhost:4566/local",
+        "Description": "URL of the service endpoint",
+        "ExportName": "sls-slsA-local-ServiceEndpoint"
+      }
+    ],
+    "compiledCloudFormationTemplate": {
+      "AWSTemplateFormatVersion": "2010-09-09",
+      "Description": "The AWS CloudFormation template for this Serverless application",
+      "Resources": {
+        "CreateOrderLogGroup": {
+          "Type": "AWS::Logs::LogGroup",
+          "Properties": {
+            "LogGroupName": "/aws/lambda/slsA-local-createOrder"
+          }
+        },
+        "IamRoleLambdaExecution": {
+          "Type": "AWS::IAM::Role",
+          "Properties": {
+            "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": [
+                      "lambda.amazonaws.com"
+                    ]
+                  },
+                  "Action": [
+                    "sts:AssumeRole"
+                  ]
+                }
+              ]
+            },
+            "Policies": [
+              {
+                "PolicyName": {
+                  "Fn::Join": [
+                    "-",
+                    [
+                      "slsA",
+                      "local",
+                      "lambda"
+                    ]
+                  ]
+                },
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "logs:CreateLogStream",
+                        "logs:CreateLogGroup",
+                        "logs:TagResource"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/slsA-local*:*"
+                        }
+                      ]
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                        {
+                          "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/slsA-local*:*:*"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ],
+            "Path": "/",
+            "RoleName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "slsA",
+                  "local",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  "lambdaRole"
+                ]
+              ]
+            }
+          }
+        },
+        "CreateOrderLambdaFunction": {
+          "Type": "AWS::Lambda::Function",
+          "Properties": {
+            "Code": {
+              "S3Bucket": "hot-reload",
+              "S3Key": "/home/fernando/Escritorio/order-pipeline-sqs/order-pipeline-sqs-v2/slsA"
+            },
+            "Handler": ".serverless/build/src/handlers/createOrder.handler",
+            "Runtime": "nodejs18.x",
+            "FunctionName": "slsA-local-createOrder",
+            "MemorySize": 1024,
+            "Timeout": 6,
+            "Environment": {
+              "Variables": {
+                "QUEUE_URL": "http://sqs.us-east-1.172.17.0.1:4566/000000000000/slsB-local-orderQueue",
+                "AWS_ENDPOINT": "http://172.17.0.1:4566",
+                "AWS_REGION": "us-east-1",
+                "NODE_OPTIONS": "--enable-source-maps"
+              }
+            },
+            "Role": {
+              "Fn::GetAtt": [
+                "IamRoleLambdaExecution",
+                "Arn"
+              ]
+            }
+          },
+          "DependsOn": [
+            "CreateOrderLogGroup"
+          ]
+        },
+        "CreateOrderLambdaVersionTM26cGq9vWf6IuolhWAO8aBSwHYH8UGIN89kTQbTlo": {
+          "Type": "AWS::Lambda::Version",
+          "DeletionPolicy": "Retain",
+          "Properties": {
+            "FunctionName": {
+              "Ref": "CreateOrderLambdaFunction"
+            },
+            "CodeSha256": "ULSruH0b009w49xQn/aJHsTNaSkNA9iBTL5kBhZ7rSc="
+          }
+        },
+        "ApiGatewayRestApi": {
+          "Type": "AWS::ApiGateway::RestApi",
+          "Properties": {
+            "Name": "local-slsA",
+            "EndpointConfiguration": {
+              "Types": [
+                "EDGE"
+              ]
+            },
+            "Policy": ""
+          }
+        },
+        "ApiGatewayResourceOrders": {
+          "Type": "AWS::ApiGateway::Resource",
+          "Properties": {
+            "ParentId": {
+              "Fn::GetAtt": [
+                "ApiGatewayRestApi",
+                "RootResourceId"
+              ]
+            },
+            "PathPart": "orders",
+            "RestApiId": {
+              "Ref": "ApiGatewayRestApi"
+            }
+          }
+        },
+        "ApiGatewayMethodOrdersPost": {
+          "Type": "AWS::ApiGateway::Method",
+          "Properties": {
+            "HttpMethod": "POST",
+            "RequestParameters": {},
+            "ResourceId": {
+              "Ref": "ApiGatewayResourceOrders"
+            },
+            "RestApiId": {
+              "Ref": "ApiGatewayRestApi"
+            },
+            "ApiKeyRequired": "<REDACTED>",
+            "AuthorizationType": "NONE",
+            "Integration": {
+              "IntegrationHttpMethod": "POST",
+              "Type": "AWS_PROXY",
+              "Uri": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":apigateway:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":lambda:path/2015-03-31/functions/",
+                    {
+                      "Fn::GetAtt": [
+                        "CreateOrderLambdaFunction",
+                        "Arn"
+                      ]
+                    },
+                    "/invocations"
+                  ]
+                ]
+              }
+            },
+            "MethodResponses": []
+          },
+          "DependsOn": [
+            "CreateOrderLambdaPermissionApiGateway"
+          ]
+        },
+        "ApiGatewayDeployment1754518436866": {
+          "Type": "AWS::ApiGateway::Deployment",
+          "Properties": {
+            "RestApiId": {
+              "Ref": "ApiGatewayRestApi"
+            },
+            "StageName": "local"
+          },
+          "DependsOn": [
+            "ApiGatewayMethodOrdersPost"
+          ]
+        },
+        "CreateOrderLambdaPermissionApiGateway": {
+          "Type": "AWS::Lambda::Permission",
+          "Properties": {
+            "FunctionName": {
+              "Fn::GetAtt": [
+                "CreateOrderLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Action": "lambda:InvokeFunction",
+            "Principal": "apigateway.amazonaws.com",
+            "SourceArn": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:",
+                  {
+                    "Ref": "AWS::Partition"
+                  },
+                  ":execute-api:",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ":",
+                  {
+                    "Ref": "AWS::AccountId"
+                  },
+                  ":",
+                  {
+                    "Ref": "ApiGatewayRestApi"
+                  },
+                  "/*/*"
+                ]
+              ]
+            }
+          }
+        },
+        "OrderQueue": {
+          "Type": "AWS::SQS::Queue",
+          "Properties": {
+            "QueueName": "order-queue"
+          }
+        }
+      },
+      "Outputs": {
+        "ServerlessDeploymentBucketName": {
+          "Value": "serverless-framework-deployments-us-east-1-7cc720e8-a794",
+          "Export": {
+            "Name": "sls-slsA-local-ServerlessDeploymentBucketName"
+          }
+        },
+        "CreateOrderLambdaFunctionQualifiedArn": {
+          "Description": "Current Lambda function version",
+          "Value": {
+            "Ref": "CreateOrderLambdaVersionTM26cGq9vWf6IuolhWAO8aBSwHYH8UGIN89kTQbTlo"
+          },
+          "Export": {
+            "Name": "sls-slsA-local-CreateOrderLambdaFunctionQualifiedArn"
+          }
+        },
+        "ServiceEndpoint": {
+          "Description": "URL of the service endpoint",
+          "Value": {
+            "Fn::Join": [
+              "",
+              [
+                "https://",
+                {
+                  "Ref": "ApiGatewayRestApi"
+                },
+                ".execute-api.",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ".",
+                {
+                  "Ref": "AWS::URLSuffix"
+                },
+                "/local"
+              ]
+            ]
+          },
+          "Export": {
+            "Name": "sls-slsA-local-ServiceEndpoint"
+          }
+        }
+      }
+    }
+  }
+}

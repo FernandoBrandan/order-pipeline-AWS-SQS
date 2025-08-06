@@ -1,0 +1,125 @@
+service: slsB
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: dev
+  environment:
+    TABLE_NAME: order-table 
+    DLQ_TABLE: order-dlq
+    QUEUE_URL: http://localhost:4566/000000000000/order-queue 
+    AWS_ACCESS_KEY_ID: test
+    AWS_SECRET_ACCESS_KEY: test
+    AWS_REGION: us-east-1
+    AWS_ENDPOINT_URL: http://localhost:4566
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+        - dynamodb:UpdateItem
+        - dynamodb:Query
+        - dynamodb:Scan
+        - sqs:SendMessage      # Agregado para poder enviar a DLQ
+        - sqs:ReceiveMessage   # Agregado para recibir de DLQ
+        - sqs:DeleteMessage    # Agregado para eliminar de DLQ
+      Resource:
+        - arn:aws:dynamodb:us-east-1:000000000000:table/order-table
+        - arn:aws:dynamodb:us-east-1:000000000000:table/order-dlq    
+        - arn:aws:sqs:us-east-1:000000000000:order-queue          # Agregado
+        - arn:aws:sqs:us-east-1:000000000000:orders-queue-dlq     # Agregado
+ 
+plugins:
+  - serverless-localstack
+  - serverless-offline
+  - serverless-offline-sqs
+  - serverless-offline-sqs-dlq
+
+custom:
+  localstack:
+    stages:
+      - local
+    host: http://localhost
+    edgePort: 4566
+    autostart: true 
+    lambda:
+      mountCode: true
+
+  serverless-offline:
+    httpPort: 3003
+    lambdaPort: 3004
+
+  serverless-offline-sqs:
+    endpoint: http://localhost:4566
+    accessKeyId: test
+    secretAccessKey: test
+    region: us-east-1
+
+    autoCreate: false
+    apiVersion: '2012-11-05' 
+  
+  serverless-offline-sqs-dlq:
+    maxReceiveCount: 3
+    redriveDelay: 0
+    
+functions:
+  processOrder:
+    handler: src/handlers/processOrder.handler
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - OrderQueue
+              - Arn
+  
+  handleDlq:
+    handler: src/handlers/handleDlq.handler
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt: [OrdersQueueDLQ, Arn]
+          batchSize: 1 
+
+resources:
+  Resources:
+       
+    OrdersQueueDLQ:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: orders-queue-dlq 
+
+    OrderQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: order-queue
+        # Se configura queue principal con OrdersQueueDLQ (Dead Letter Queue)
+        RedrivePolicy:  
+          deadLetterTargetArn:
+            Fn::GetAtt: [OrdersQueueDLQ, Arn]
+          maxReceiveCount: 3  # Después de 3 fallos va a la DLQ
+        VisibilityTimeout: 30  # Segundos antes del retry   
+ 
+    OrderTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: order-table
+        AttributeDefinitions:
+          - AttributeName: orderId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: orderId
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+    
+    OrderDlqTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: order-dlq
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
